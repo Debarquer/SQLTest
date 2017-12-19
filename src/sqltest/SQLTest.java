@@ -12,6 +12,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.util.ArrayList;
 
 /**
  *
@@ -32,7 +33,7 @@ public class SQLTest {
     
     public static void connect(String address, String port, String database, String username, String password){
         try{
-            conn = getConnection(address, port, database, username, password);
+            getConnection(address, port, database, username, password);
         } catch(SQLException e){
             //do whatever
             System.out.println("Unable to connect to database: " + e.getMessage());
@@ -52,65 +53,8 @@ public class SQLTest {
                 }
             }
     }
-    
-    public static void printCommands(){
-        Scanner reader = new Scanner(System.in);  // Reading from System.in
-        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
-        Boolean done = false;
-        while(!done){
-            System.out.println("Enter a command: ");
-            String s = reader.next(); // Scans the next token of the input as an int.
-            System.out.println("You entered: '" + s + "'");
-            switch(s){
-                case "exit":
-                    System.out.println("Exiting...");
-                    done = true;
-                    break;
-                case "print":
-                    System.out.println("Enter table: ");
-                    String tableToPrint = reader.next();
-                    SQLTest.printFromDatabase(tableToPrint);
-                    break;
-                case "insert":
-                    System.out.println("Enter table: ");
-                    String tableToInsert = reader.next();
-                    System.out.println("Enter a: ");
-                    String a = reader.next(); // Scans the next token of the input as an int.
-                    System.out.println("Enter b: ");
-                    String b = reader.next(); // Scans the next token of the input as an int.
-                    System.out.println("Enter c: ");
-                    String c = reader.next(); // Scans the next token of the input as an int.
-                    SQLTest.insertIntoDatabase(tableToInsert, a, b, c);
-                    break;
-                case "delete":
-                    System.out.println("Enter table: ");
-                    String tableToDelete = reader.next();
-                    //System.out.println("Enter column: ");
-                    //String column = reader.next();
-                    System.out.println("Enter condition: ");
-                    String condition = reader.next(); // Scans the next token of the input as an int.
-
-                    SQLTest.deleteFromDatabase(tableToDelete, condition);
-                    break;
-                case "help":
-                    System.out.println("Available commands: exit, print, insert, delete, help");
-                    break;
-                default:
-                    System.out.println("Invalid command, enter help for available commands");
-                    break;
-            }
-        }
-
-        //once finished
-        reader.close();
-    }
-    
-    public static Connection getConnection(String address, String port, String database, String username, String password) throws SQLException{
-        Connection conn = null;
-        //Properties connectionProps = new Properties();
-        //connectionProps.put("user", "root2");
-        //connectionProps.put("password", "root2");
-
+   
+    public static void getConnection(String address, String port, String database, String username, String password) throws SQLException{
         if(conn != null){
             conn.close();
         }
@@ -118,31 +62,55 @@ public class SQLTest {
         conn = DriverManager.getConnection("jdbc:mysql://" + address + ":" + port + "/" + database, username, password);
     
         System.out.println("Connected to database");
-        
-        return conn;
     }
     
-    public static void deleteFromDatabase(String table, String condition){
-        String SQL = "DELETE FROM ? WHERE a LIKE ?";
+    public static void updateDatabase(String table, ArrayList columns, ArrayList newData, String conditionColumn, String conditionData){
+        if(columns.size() != newData.size()){
+            System.out.println("Failed to update db: Size of colummns != size of new data");
+            return;
+        }
+        
+        String SQLNewData = "";
+        for(int i = 0; i < columns.size(); i++){
+            if(i != 0)
+                SQLNewData += ", " + columns.get(i) + " = ?";
+            else
+                SQLNewData += columns.get(i) + " = ?";
+        }
+        String SQL = "UPDATE " + table + " SET " + SQLNewData + " WHERE " + conditionColumn + " = '" + conditionData + "'";
         try (PreparedStatement ps = conn.prepareStatement(SQL)){
-            ps.setString(1, table);
-            ps.setString(2, condition);
+            for(int i = 0; i < newData.size(); i++){
+                ps.setString(i + 1, (String)newData.get(i));
+            }
+            int numRowsAffected = ps.executeUpdate();
+            System.out.println(numRowsAffected + " row(s) affected");
+        } catch (SQLException ex) {
+            //Logger.getLogger(SQLTest.class.getName()).log(Level.SEVERE, null, ex);
+            System.out.println("Unable to update database: " + ex.getMessage());
+            System.out.println("SQL: " + SQL);
+        }
+    }
+    
+    public static void deleteFromDatabase(String table, String column, String condition){
+        String SQL = "DELETE FROM " + table + " WHERE " + column + " = ?";
+        try (PreparedStatement ps = conn.prepareStatement(SQL)){
+            //ps.setString(1, table);
+            ps.setString(1, condition);
             int numRowsAffected = ps.executeUpdate();
             System.out.println(numRowsAffected + " row(s) affected");
         } catch (SQLException ex) {
             //Logger.getLogger(SQLTest.class.getName()).log(Level.SEVERE, null, ex);
             System.out.println("Unable to delete from database: " + ex.getMessage());
-            System.out.println("SQL: \"DELETE FROM "+table+" WHERE "+condition+"\"");
+            System.out.println("SQL: \"DELETE FROM things WHERE a = "+condition+"\"");
         }
     }
     
     public static void insertIntoDatabase(String table, String a, String b, String c){
-        String SQL = "INSERT INTO ? (a, b, c) VALUES (?, ?, ?)";
+        String SQL = "INSERT INTO " + table + " (a, b, c) VALUES (?, ?, ?)";
         try (PreparedStatement ps = conn.prepareStatement(SQL)){
-            ps.setString(1, table);
-            ps.setString(2, a);
-            ps.setString(3, b);
-            ps.setString(4, c);
+            ps.setString(1, a);
+            ps.setString(2, b);
+            ps.setString(3, c);
             int numRowsAffected = ps.executeUpdate();
             System.out.println(numRowsAffected + " row(s) affected");
         } catch (SQLException ex) {
@@ -151,7 +119,10 @@ public class SQLTest {
         }
     }
     
-    public static void printFromDatabase(String table){
+    public static String printFromDatabase(String table){
+        
+        String s = "";
+        
         Statement stmt = null;  
                 
         ResultSet rs = null;  
@@ -211,7 +182,9 @@ public class SQLTest {
                         System.out.println(e + "\n");
                     }
 
-                    System.out.println(pk + " " + a + " " + b + " " + c);
+                    String tmp = pk + " " + a + " " + b + " " + c;
+                    s += tmp + "<br>";
+                    System.out.println(tmp);
 
                     //System.out.println(rs.getString(4) + " " + rs.getString(6));  
                 }
@@ -221,6 +194,8 @@ public class SQLTest {
             }
         } catch (SQLException ex) {
             System.out.println("Unable to print from database: " + ex.getMessage());
-        }  
+        }
+        
+        return s;
     }
 }
