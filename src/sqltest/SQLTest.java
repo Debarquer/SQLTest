@@ -202,7 +202,7 @@ public class SQLTest {
                     String tmp = pk + " " + a + " " + b + " " + c;
                     DataObject tmpdo = new DataObject(Integer.parseInt(pk), tmp + "<br>");
                     arr.add((DataObject)tmpdo);
-                    System.out.println(tmp);
+                    System.out.println("SQLTest db data dump: " + tmp);
 
                     //System.out.println(rs.getString(4) + " " + rs.getString(6));  
                 }
