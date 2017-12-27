@@ -20,18 +20,34 @@ import java.util.ArrayList;
  */
 public class SQLTest {
 
+    public class DataObject{
+        
+        public int pk;
+        public String data;
+        
+        DataObject(int pk, String data){
+            this.pk = pk;
+            this.data = data;
+        }
+        
+        @Override
+        public String toString(){
+            return data;
+        }
+    }
+    
     /**
      * @param args the command line arguments
      */
     
     static Connection conn = null;
     
-    public static void SQLTest() {
+    public void SQLTest() {
         // TODO code application logic here
         
     }
     
-    public static void connect(String address, String port, String database, String username, String password){
+    public void connect(String address, String port, String database, String username, String password){
         try{
             getConnection(address, port, database, username, password);
         } catch(SQLException e){
@@ -41,7 +57,7 @@ public class SQLTest {
         }
     }
     
-    public static void closeConnection(){
+    public void closeConnection(){
         if(conn != null){
                 //.out.println("Finally");
                 try {
@@ -54,7 +70,7 @@ public class SQLTest {
             }
     }
    
-    public static void getConnection(String address, String port, String database, String username, String password) throws SQLException{
+    public void getConnection(String address, String port, String database, String username, String password) throws SQLException{
         if(conn != null){
             conn.close();
         }
@@ -64,7 +80,7 @@ public class SQLTest {
         System.out.println("Connected to database");
     }
     
-    public static void updateDatabase(String table, ArrayList columns, ArrayList newData, String conditionColumn, String conditionData){
+    public void updateDatabase(String table, ArrayList columns, ArrayList newData, String conditionColumn, String conditionData){
         if(columns.size() != newData.size()){
             System.out.println("Failed to update db: Size of colummns != size of new data");
             return;
@@ -91,7 +107,7 @@ public class SQLTest {
         }
     }
     
-    public static void deleteFromDatabase(String table, String column, String condition){
+    public void deleteFromDatabase(String table, String column, String condition){
         String SQL = "DELETE FROM " + table + " WHERE " + column + " = ?";
         try (PreparedStatement ps = conn.prepareStatement(SQL)){
             //ps.setString(1, table);
@@ -105,7 +121,7 @@ public class SQLTest {
         }
     }
     
-    public static void insertIntoDatabase(String table, String a, String b, String c){
+    public void insertIntoDatabase(String table, String a, String b, String c){
         String SQL = "INSERT INTO " + table + " (a, b, c) VALUES (?, ?, ?)";
         try (PreparedStatement ps = conn.prepareStatement(SQL)){
             ps.setString(1, a);
@@ -119,9 +135,10 @@ public class SQLTest {
         }
     }
     
-    public static String printFromDatabase(String table){
+    public ArrayList<DataObject> printFromDatabase(String table){
         
-        String s = "";
+        ArrayList arr = new ArrayList<DataObject>();
+        //String s = "";
         
         Statement stmt = null;  
                 
@@ -183,7 +200,8 @@ public class SQLTest {
                     }
 
                     String tmp = pk + " " + a + " " + b + " " + c;
-                    s += tmp + "<br>";
+                    DataObject tmpdo = new DataObject(Integer.parseInt(pk), tmp + "<br>");
+                    arr.add((DataObject)tmpdo);
                     System.out.println(tmp);
 
                     //System.out.println(rs.getString(4) + " " + rs.getString(6));  
@@ -196,6 +214,6 @@ public class SQLTest {
             System.out.println("Unable to print from database: " + ex.getMessage());
         }
         
-        return s;
+        return arr;
     }
 }
